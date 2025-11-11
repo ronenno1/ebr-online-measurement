@@ -17,7 +17,122 @@ Both tasks use the same blink detection algorithm but differ in the type of pres
 
 ## 🚀 Try the Tasks
 
-| Task | Description | Link |
-|------|--------------|------|
-| 👁️ **Visual Task** | Measures EBR during exposure to visual stimuli | [Start Visual Task](vis.html) |
-| 🎧 **Auditory Task** | Measures EBR during exposure to auditory stimuli | [Start Auditory Task](aud.html) |
+| Task | Description | Live Link | View Code |
+|------|--------------|------------|-----------|
+| 👁️ **Visual Task** | Measures EBR during exposure to visual stimuli | [Start Visual Task](https://ronenno1.github.io/ebr-online-measurement/vis.html) | [View Code](https://github.com/ronenno1/ebr-online-measurement/blob/main/EBR_VIS.js) |
+| 🎧 **Auditory Task** | Measures EBR during exposure to auditory stimuli | [Start Auditory Task](https://ronenno1.github.io/ebr-online-measurement/aud.html) | [View Code](https://github.com/ronenno1/ebr-online-measurement/blob/main/EBR_AUD.js) |
+
+---
+
+
+## 💻 Running the Experiment
+
+For running the experiment, **three main files** are required:
+
+1. **Manager file:** `runner_aud.js` or `runner_vis.js`  
+2. **Experiment file:** `EBR_VIS.js` or `EBR_AUD.js`  
+3. **Eye blink package:** `minno_mesh.js`  
+
+### Manager File Setup
+
+In addition to defining the sequence of tasks for data collection, the following **basic setups** are required:
+
+**1. Loading required packages**
+
+```javascript
+// Eye blink tracking
+import 'minno_mesh.js';
+
+// MediaPipe packages
+import 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js';
+import 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+
+// Optional: Datapipe for OSF data saving
+import 'https://cdn.jsdelivr.net/gh/minnojs/minno-datapipe@1.*/datapipe.min.js';
+
+```
+
+**2. Datapipe initialization (if required)**
+```javascript
+init_data_pipe(API, 'UAckahgsCaWH', { file_type:'csv' });
+// Replace 'UAckahgsCaWH' with your own Datapipe project hashcode
+```
+
+**3. Initialize Minno Mesh**
+```javascript
+global.init_minno_mesh = init_minno_mesh;
+```
+
+**4. Uploading task at the end of the experiment (if using Datapipe)**
+```javascript
+uploading: uploading_task({
+    title: 'Data Upload in Progress',
+    header: 'Data Upload in Progress',
+    body: 'Please wait while your data is securely uploaded to the server. You can exit the experiment once the upload is complete.',
+    buttonText: 'Exit the Experiment'
+});
+// Call this task at the end:
+{ inherit: 'uploading' }
+
+```
+
+### Experiment File Setup (`EBR_VIS.js` or `EBR_AUD.js`)
+
+**1. Initialize Minno Mesh at the beginning of the experiment**
+```javascript
+global.init_minno_mesh(global); // Loads minno_faces components
+```
+
+**Start recording at the beginning of each trial**
+```javascript
+{
+    conditions: [{ type:'begin' }],
+    actions: [
+        { type:'custom', fn: function() { global.start_recording(global); } }
+    ]
+}
+```
+
+
+**3. End of trial: collect eye blink data**
+```javascript
+{
+    conditions: [{ type:'inputEquals', value:'end' }],
+    actions: [
+        { type:'hideStim', handle:['All'] },
+        { 
+            type:'setTrialAttr',
+            setter: function(trialData, eventData) {
+                trialData.EBR_bins      = global.get_all_bins(global, 50); // Bin size 50 ms
+                trialData.EBR           = global.get_all(global);
+                trialData.EBR_validity  = global.get_validity(global);
+                trialData.SR            = 50; // Bin size in ms
+            }
+        },
+        { type:'custom', fn: function() { global.stop_recording(global); } },
+        { type:'log' },
+        { type:'endTrial' }
+    ]
+}
+```
+### Notes
+
+- `global.get_all` → gets complete eye blink information, including timestamps.  
+- `global.get_all_bins(global, 50)` → gets binned data (here 50 ms bins).  
+- `global.get_validity` → returns the number of valid samples detected during the trial.  
+- Recording stops at the end of the trial and restarts in the next trial as needed.
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+---
+
+### 👤 Author
+
+Developed by *Ronen Hershman*  
+📧 Contact: [ronen.hershman@uibk.ac.at]
+
+
