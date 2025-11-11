@@ -7,7 +7,7 @@ define(['managerAPI',
 	var API         = new Manager();
     var instStyle   = "font-size:20px; text-align:middle;  margin-right:10px; font-family:arial";
     var global      = API.getGlobal(); 
-	init_data_pipe(API, 'UAckahgsCaWH',  {file_type:'csv', debug:true, name:'my name', title: 'title', header:'header', body: 'body', buttonText: 'buttonText'});	
+	init_data_pipe(API, 'UAckahgsCaWH',  {file_type:'csv'});	
 
     global.init_minno_mesh  = init_minno_mesh;
 
