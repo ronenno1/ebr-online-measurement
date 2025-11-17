@@ -27,6 +27,15 @@ Both tasks use the same blink detection algorithm but differ in the type of pres
 
 ## 💻 Running the Experiment
 
+This platform is built using the **Minno** framework for online behavioral experiments — see the official documentation here: https://minnojs.github.io/
+
+
+
+
+
+
+
+
 For running the experiment, **three main files** are required:
 
 1. **Manager file:** `runner_aud.js` or `runner_vis.js`  
@@ -53,6 +62,13 @@ import 'https://cdn.jsdelivr.net/gh/minnojs/minno-datapipe@1.*/datapipe.min.js';
 ```
 
 **2. Datapipe initialization (if required)**
+
+
+Datapipe is a platform that supports automatic data upload to the **Open Science Framework (OSF)** using **DataPipe**, an open-source service for securely archiving behavioral experiment data in real time.  
+If enabled, each completed session is packaged as a JSON or a CSV file and sent directly from the browser to a linked OSF project via the DataPipe API.  
+Learn more here: https://pipe.jspsych.org
+
+
 ```javascript
 init_data_pipe(API, 'UAckahgsCaWH', { file_type:'csv' });
 // Replace 'UAckahgsCaWH' with your own Datapipe project hashcode
@@ -64,6 +80,28 @@ global.init_minno_mesh = init_minno_mesh;
 ```
 
 **4. Uploading task at the end of the experiment (if using Datapipe)**
+
+Because data are uploaded to **OSF** using **DataPipe**, the upload process may take a few moments depending on the participant’s internet connection.  
+To ensure that all files are successfully transferred, the platform includes an **uploading step** at the end of the task. During this step, participants are shown a **“please wait”** notification while the data are being sent to OSF.
+
+This waiting screen is essential, as it prevents participants from closing the browser before the upload completes.  
+More details about implementing an upload-waiting mechanism can be found in the 
+[Minno documentation](https://minnojs.github.io/blog/2023/11/01/running-project-implicits-iat-on-your-own/#waiting-for-the-data-recording).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```javascript
 uploading: uploading_task({
     title: 'Data Upload in Progress',
