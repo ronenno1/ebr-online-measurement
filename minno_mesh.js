@@ -58,7 +58,7 @@ function init_minno_mesh(global) {
     global.camera.start();
     global.stop_me = false;
     
-function parse_data(results) {
+    function parse_data(results) {
         const canvasElement = document.getElementsByClassName('output_canvas')[0];
         const canvasCtx     = canvasElement.getContext('2d');
 
@@ -97,112 +97,107 @@ function parse_data(results) {
         canvasCtx.restore();
     }
 }
-    function pythagoras(pointA, pointB){
-      return Math.sqrt(Math.pow(pointA.x-pointB.x, 2) + Math.pow(pointA.y-pointB.y, 2));
+
+function pythagoras(pointA, pointB){
+  return Math.sqrt(Math.pow(pointA.x-pointB.x, 2) + Math.pow(pointA.y-pointB.y, 2));
+}
+
+function calcratio(landmarks) {
+    var left = (pythagoras(landmarks[385], landmarks[380])+pythagoras(landmarks[387], landmarks[373]))/(2*pythagoras(landmarks[362], landmarks[263]));
+    var right = (pythagoras(landmarks[160], landmarks[144])+pythagoras(landmarks[158], landmarks[153]))/(2*pythagoras(landmarks[33], landmarks[133]));
+    return 0.5*(left+right);
+}
+
+function get_all_bins(global, bins_size = 100) {
+    var data4ana = global.eye_data;
+    
+    var data_times  = data4ana.map(sample=>sample.t);
+    data_times      = data_times.map(t=> t-data_times[0]);
+    var data_ratio  = data4ana.map(sample=>sample.ratio);
+
+    var mean_ratio  = calc_mean(data_ratio);
+    var std_ratio   = calc_std(data_ratio);
+    
+    var mean_sampling_rate  = Math.round(1000/calc_mean(calc_diff(data_times)));
+    var data_ratio_diff     = calc_diff(data_ratio);
+    var max_diff            = Math.max.apply(null, data_ratio_diff);
+    var min_diff            = Math.min.apply(null, data_ratio_diff);
+    var data_ratio          = data_ratio.map(v=>v<mean_ratio-(std_ratio) ? 0 : v);
+
+    data_ratio = smooth(data_ratio);
+    data_ratio = data_ratio.map(v=>v>0 ? 1 : 0);
+    
+    var data_ratio_diff = calc_diff(data_ratio);
+    var onset_cands     = data_ratio_diff.map((e,i)=>e==-1 ? -i : 0).filter(v=>v!=0);
+    var offset_cands    = data_ratio_diff.map((e,i)=>e==1 ? i : 0).filter(v=>v!=0);
+
+    var candidates = onset_cands.concat(offset_cands).sort((a, b)=>Math.abs(a) - Math.abs(b));
+    if (candidates.length && candidates[0] >0)
+        candidates = [0].concat(candidates);
+    if (candidates.length && candidates[candidates.length-1] <0)
+        candidates = candidates.concat([data_ratio.length-1]);
+
+    var blink_id     = 0;
+    var blink_onset  = 0;
+    var blink_offset = 0;
+    var all_p2 = [];
+    var all_p3 = [];
+    var p2 = 0;
+    var p3 = 0;
+
+    while (blink_id<candidates.length){
+        blink_onset = Math.abs(candidates[blink_id]);
+        all_p2      = data_ratio_diff.slice(0, blink_onset).map((e, i)=>e>min_diff/1000 ? i : '').filter(String);
+        p2          = all_p2[all_p2.length-1];
+        
+        blink_offset = candidates[blink_id+1];
+        all_p3       = data_ratio_diff.slice(blink_offset).map((e, i)=>(e<0) ? i : '').filter(String);
+        p3           = all_p3[0]+blink_offset;
+        data_ratio   = data_ratio.map((v, i)=>(i>=p2&&i<=p3) ? 0 : v);
+        
+        blink_id = blink_id + 2;
     }
-    function calcratio(landmarks) {
-        var left = (pythagoras(landmarks[385], landmarks[380])+pythagoras(landmarks[387], landmarks[373]))/(2*pythagoras(landmarks[362], landmarks[263]));
-        var right = (pythagoras(landmarks[160], landmarks[144])+pythagoras(landmarks[158], landmarks[153]))/(2*pythagoras(landmarks[33], landmarks[133]));
-        return 0.5*(left+right);
-    }
-
-
-    function get_all_bins(global, bins_size = 100) {
-
-        var data4ana = global.eye_data;
-        
-        var data_times  = data4ana.map(sample=>sample.t);
-        data_times      = data_times.map(t=> t-data_times[0]);
-        var data_ratio  = data4ana.map(sample=>sample.ratio);
-
-        var mean_ratio  = calc_mean(data_ratio);
-        var std_ratio   = calc_std(data_ratio);
-        
-        var mean_sampling_rate  = Math.round(1000/calc_mean(calc_diff(data_times)));
-        var data_ratio_diff     = calc_diff(data_ratio);
-        var max_diff            = Math.max.apply(null, data_ratio_diff);
-        var min_diff            = Math.min.apply(null, data_ratio_diff);
-        var data_ratio          = data_ratio.map(v=>v<mean_ratio-(std_ratio) ? 0 : v);
-
-        data_ratio = smooth(data_ratio);
-        data_ratio = data_ratio.map(v=>v>0 ? 1 : 0);
-        
-        var data_ratio_diff = calc_diff(data_ratio);
-        var onset_cands     = data_ratio_diff.map((e,i)=>e==-1 ? -i : 0).filter(v=>v!=0);
-        var offset_cands    = data_ratio_diff.map((e,i)=>e==1 ? i : 0).filter(v=>v!=0);
-
-        var candidates = onset_cands.concat(offset_cands).sort((a, b)=>Math.abs(a) - Math.abs(b));
-        if (candidates.length && candidates[0] >0)
-            candidates = [0].concat(candidates);
-        if (candidates.length && candidates[candidates.length-1] <0)
-            candidates = candidates.concat([data_ratio.length-1]);
-
-        var blink_id     = 0;
-        var blink_onset  = 0;
-        var blink_offset = 0;
-        var all_p2 = [];
-        var all_p3 = [];
-        var p2 = 0;
-        var p3 = 0;
-
-        while (blink_id<candidates.length){
-            blink_onset = Math.abs(candidates[blink_id]);
-            all_p2      = data_ratio_diff.slice(0, blink_onset).map((e, i)=>e>min_diff/1000 ? i : '').filter(String);
-            p2          = all_p2[all_p2.length-1];
-            
-            blink_offset = candidates[blink_id+1];
-            all_p3       = data_ratio_diff.slice(blink_offset).map((e, i)=>(e<0) ? i : '').filter(String);
-            p3           = all_p3[0]+blink_offset;
-            data_ratio   = data_ratio.map((v, i)=>(i>=p2&&i<=p3) ? 0 : v);
-            
-            blink_id = blink_id + 2;
-        }
-        
-        var num_of_bins     = Math.floor(data_times[data_times.length-1]/bins_size);
-        var bin_id          = 0;
-        var bin_samples     = [];
-        var bin_total_data  = [];
-        
-        for(let bin_id = 0; bin_id < num_of_bins; bin_id++){
-            var indices             = data_times.map((e, i) => e>=(bin_id)*bins_size && e<(bin_id+1)*bins_size ? i : '').filter(String);
-            var bin_data            = data_ratio.filter((e, i)=>indices.includes(i));
-            bin_total_data[bin_id]  = calc_mean(bin_data)<1 ? 0 : 1;
-        }
-        
-        console.log(bin_total_data.map(e=>1-e).join(''));
-        return '*'+bin_total_data.map(e=>1-e).join('');
-
-    }
-
+    
+    var num_of_bins     = Math.floor(data_times[data_times.length-1]/bins_size);
+    var bin_id          = 0;
+    var bin_samples     = [];
+    var bin_total_data  = [];
+    
+    for(let bin_id = 0; bin_id < num_of_bins; bin_id++){
+        var indices             = data_times.map((e, i) => e>=(bin_id)*bins_size && e<(bin_id+1)*bins_size ? i : '').filter(String);
+        var bin_data            = data_ratio.filter((e, i)=>indices.includes(i));
+        bin_total_data[bin_id]  = calc_mean(bin_data)<1 ? 0 : 1;
+    }       
+    return '*'+bin_total_data.map(e=>1-e).join('');
+}
 
 function get_all(global) {
-        return global.eye_data;
-    }
+    return global.eye_data;
+}
 
-    function get_validity(global) {
-        return (global.samples_valid_counter/global.samples_counter);
+function get_validity(global) {
+    return (global.samples_valid_counter/global.samples_counter);
+}
 
-    }
+function start_recording(global) {
+    global.detectionNeeded = true;
+    global.eye_data = [];
+    global.samples_counter = 0;
+    global.samples_valid_counter = 0;
+}
 
-    function start_recording(global) {
-        global.detectionNeeded = true;
-        global.eye_data = [];
-        global.samples_counter = 0;
-        global.samples_valid_counter = 0;
+function stop_recording(global) {
+    global.detectionNeeded = false;
+}
 
-    }
-    function stop_recording(global) {
-        global.detectionNeeded = false;
-    }
-
-    function stop_video(global) {
-        global.stop_me = true;
-        global.detectionNeeded = false;
-        document.body.removeChild(global.container);
-        global.camera.stop();
-        global.camera = false;
-        global.minno_mesh = false;
-    }
+function stop_video(global) {
+    global.stop_me = true;
+    global.detectionNeeded = false;
+    document.body.removeChild(global.container);
+    global.camera.stop();
+    global.camera = false;
+    global.minno_mesh = false;
+}
 
 
 function  calc_std (arr, usePopulation = false){
