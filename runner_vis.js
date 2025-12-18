@@ -1,10 +1,39 @@
-define(['managerAPI', 
-'minno_mesh.js',
-'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js',
-'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js',
-'https://cdn.jsdelivr.net/gh/minnojs/minno-datapipe@1.*/datapipe.min.js'], function(Manager, minno_mesh, facemesh, facemesh2){
+define(['managerAPI', 'minno_mesh.js'], function (Manager, minno_mesh) {
 
 	var API         = new Manager();
+
+    if (window.define && window.define.amd) {
+      try {
+        delete window.define.amd;
+      } catch (e) {
+        window.define.amd = undefined;
+      }
+    }
+    
+    // Load external scripts once (plain script tags, not RequireJS).
+    function loadScriptOnce(url) {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${url}"]`)) return resolve();
+        const s = document.createElement('script');
+        s.src = url;
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    
+    // Promise that resolves once MediaPipe is available on window.
+    if (!window.MEDIAPIPE_READY) {
+      window.MEDIAPIPE_READY = (async () => {
+        await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+        await loadScriptOnce('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js');
+        if (!window.FaceMesh) throw new Error('MediaPipe loaded but window.FaceMesh is missing.');
+      })();
+    }
+
+
+	
     var instStyle   = "font-size:20px; text-align:middle;  margin-right:10px; font-family:arial";
     var global      = API.getGlobal(); 
 	init_data_pipe(API, 'UAckahgsCaWH',  {file_type:'csv'});	
