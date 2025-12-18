@@ -2,6 +2,10 @@ define(['managerAPI', 'minno_mesh.js'], function (Manager, minno_mesh) {
 
 	var API         = new Manager();
 
+     // ---- MediaPipe loader: prevent RequireJS "mismatched anonymous define" ----
+    // Key idea: MediaPipe's WASM glue sometimes registers an *anonymous* AMD module.
+    // In a RequireJS page (Minno), that can crash on the second init.
+    // Fix: remove the AMD marker (define.amd) once, permanently, before MediaPipe/WASM runs.
     if (window.define && window.define.amd) {
       try {
         delete window.define.amd;
