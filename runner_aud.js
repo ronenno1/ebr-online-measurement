@@ -1,4 +1,4 @@
-define(['managerAPI', 'minno_mesh.js'], function (Manager, minno_mesh) {
+define(['managerAPI', 'minno_mesh.js', 'https://cdn.jsdelivr.net/gh/minnojs/minno-datapipe@1.*/datapipe.min.js'], function (Manager, minno_mesh) {
 
 	var API         = new Manager();
 
