@@ -39,7 +39,11 @@ define(['managerAPI', 'minno_mesh.js', 'https://cdn.jsdelivr.net/gh/minnojs/minn
     var global      = API.getGlobal(); 
 	init_data_pipe(API, 'UAckahgsCaWH',  {file_type:'csv'});	
 
-    global.init_minno_mesh  = init_minno_mesh;
+	// Wrap init_minno_mesh so it waits until MediaPipe is fully loaded
+	global.init_minno_mesh = async function (...args) {
+	    await window.MEDIAPIPE_READY;
+	    return init_minno_mesh.apply(this, args);
+	};
 
     var noticeInst = 'At the bottom, you can see what your webcam shows. </br>' + 
         'Your face must be in the middle of the square for our software to detect your eyes. </br>' + 
